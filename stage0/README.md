@@ -149,52 +149,6 @@ startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
 2. Add environment variables in Railway dashboard
 3. Deploy via GitHub integration
 
-### Heroku
-
-1. Create a `Procfile`:
-
-```
-web: uvicorn main:app --host 0.0.0.0 --port $PORT
-```
-
-2. Create a `runtime.txt`:
-
-```
-python-3.11.0
-```
-
-3. Deploy:
-
-```bash
-heroku create your-app-name
-git push heroku main
-```
-
-### AWS / Other Platforms
-
-Refer to your platform's Python/FastAPI deployment documentation.
-
-## 📝 Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| USER_EMAIL | Your email address | your.email@example.com |
-| USER_NAME | Your full name | Your Full Name |
-| USER_STACK | Your backend stack | Python/FastAPI |
-| PORT | Server port | 8000 |
-
-## 🏗️ Project Structure
-
-```
-hng-backend-stage0/
-├── main.py              # Main application file
-├── requirements.txt     # Python dependencies
-├── .env                 # Environment variables (not in git)
-├── .gitignore          # Git ignore file
-├── README.md           # Project documentation
-├── Procfile            # Heroku deployment (optional)
-└── railway.toml        # Railway deployment (optional)
-```
 
 ## 🔧 Tech Stack
 
@@ -212,22 +166,3 @@ The application includes comprehensive error handling:
 - **Network Issues**: Graceful degradation with default cat facts
 - **Server Errors**: Returns appropriate 500 status with error message
 
-## 📚 Documentation
-
-Interactive API documentation is available at:
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
-
-## 👨‍💻 Author
-
-Your Name - HNG Internship Backend Track
-
-## 📄 License
-
-This project is created for HNG Internship Stage 0 assessment.
-
-## 🔗 Links
-
-- [HNG Internship](https://hng.tech/internship)
-- [HNG Premium](https://hng.tech/premium)
-- [HNG Hire](https://hng.tech/hire)
