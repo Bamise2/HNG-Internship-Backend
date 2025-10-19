@@ -33,14 +33,15 @@ app.add_middleware(
 CAT_FACTS_API = "https://catfact.ninja/fact"
 API_TIMEOUT = 5.0
 
-# Your profile information
-USER_EMAIL = os.getenv("USER_EMAIL", "your.email@example.com")
-USER_NAME = os.getenv("USER_NAME", "Your Full Name")
-USER_STACK = os.getenv("USER_STACK", "Python/FastAPI")
+USER_EMAIL = os.environ.get("USER_EMAIL", "your.email@example.com")
+USER_NAME = os.environ.get("USER_NAME", "Your Full Name")
+USER_STACK = os.environ.get("USER_STACK", "Python/FastAPI")
+
+logger.info(f"Environment variables loaded - Email: {USER_EMAIL}, Name: {USER_NAME}")
 
 
 async def fetch_cat_fact() -> str:
-    """
+    """ 
     Fetch a random cat fact from the Cat Facts API.
     Returns a fallback message if the API fails.
     """
