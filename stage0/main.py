@@ -8,8 +8,8 @@ import os
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv()
-
+if os.path.exists('.env'):
+    load_dotenv()
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
