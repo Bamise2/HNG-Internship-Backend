@@ -7,12 +7,16 @@ import logging
 import os
 from dotenv import load_dotenv
 
-# Load environment variables
-if os.path.exists('.env'):
-    load_dotenv()
-# Configure logging
+# Configure logging first
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Load environment variables only for local development
+if os.path.exists('.env'):
+    load_dotenv()
+    logger.info("Loading from .env file (local development)")
+else:
+    logger.info("Loading from environment (production)")
 
 app = FastAPI(
     title="HNG Backend Stage 0",
