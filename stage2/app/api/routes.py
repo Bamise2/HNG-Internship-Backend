@@ -18,10 +18,20 @@ async def refresh_countries(db: Session = Depends(get_db)):
     Fetch all countries and exchange rates, then cache them in database.
     Also generates summary image.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
+        logger.info("Starting countries refresh...")
+        
         # Fetch data from external APIs
+        logger.info("Fetching countries data...")
         countries_data = await fetch_countries()
+        logger.info(f"Fetched {len(countries_data)} countries")
+        
+        logger.info("Fetching exchange rates...")
         exchange_rates = await fetch_exchange_rates()
+        logger.info(f"Fetched {len(exchange_rates)} exchange rates")
         
         # Process and store each country
         processed_count = 0
@@ -32,15 +42,19 @@ async def refresh_countries(db: Session = Depends(get_db)):
                 processed_count += 1
             except Exception as e:
                 # Log error but continue processing other countries
-                print(f"Error processing country {country.get('name')}: {str(e)}")
+                logger.error(f"Error processing country {country.get('name')}: {str(e)}")
                 continue
+        
+        logger.info(f"Processed {processed_count} countries")
         
         # Update metadata
         metadata = crud.update_metadata(db, processed_count)
         
         # Generate summary image
+        logger.info("Generating summary image...")
         top_countries = crud.get_top_countries_by_gdp(db, limit=5)
         generate_summary_image(processed_count, top_countries, metadata.last_refreshed_at)
+        logger.info("Summary image generated")
         
         return RefreshResponse(
             message="Countries refreshed successfully",
@@ -49,6 +63,7 @@ async def refresh_countries(db: Session = Depends(get_db)):
         )
         
     except Exception as e:
+        logger.error(f"Refresh failed: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={
@@ -70,6 +85,25 @@ def get_countries(
     countries = crud.get_countries(db, region=region, currency=currency, sort=sort)
     return countries
 
+@router.get("/countries/image")
+def get_summary_image():
+    """
+    Serve the generated summary image.
+    """
+    image_path = os.getenv("IMAGE_PATH", "cache/summary.png")
+    
+    if not os.path.exists(image_path):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "Summary image not found"}
+        )
+    
+    return FileResponse(
+        image_path, 
+        media_type="image/png",
+        headers={"Content-Disposition": "inline; filename=summary.png"}
+    )
+
 @router.get("/countries/{name}", response_model=CountryResponse)
 def get_country(name: str, db: Session = Depends(get_db)):
     """
@@ -79,7 +113,7 @@ def get_country(name: str, db: Session = Depends(get_db)):
     if not country:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"error": "Country not found"}
+            detail={"error": f"Country '{name}' not found"}
         )
     return country
 
@@ -92,7 +126,7 @@ def delete_country(name: str, db: Session = Depends(get_db)):
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"error": "Country not found"}
+            detail={"error": f"Country '{name}' not found"}
         )
     return None
 
@@ -106,18 +140,3 @@ def get_status(db: Session = Depends(get_db)):
         total_countries=metadata.total_countries,
         last_refreshed_at=metadata.last_refreshed_at
     )
-
-@router.get("/countries/image", response_class=FileResponse)
-def get_summary_image():
-    """
-    Serve the generated summary image.
-    """
-    image_path = os.getenv("IMAGE_PATH", "cache/summary.png")
-    
-    if not os.path.exists(image_path):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"error": "Summary image not found"}
-        )
-    
-    return FileResponse(image_path, media_type="image/png")

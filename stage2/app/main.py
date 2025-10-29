@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
@@ -49,6 +49,7 @@ def root():
     return {
         "message": "Country Currency & Exchange API",
         "version": "1.0.0",
+        "status": "operational",
         "endpoints": {
             "POST /countries/refresh": "Fetch and cache country data",
             "GET /countries": "Get all countries (with filters)",
@@ -56,9 +57,51 @@ def root():
             "DELETE /countries/{name}": "Delete country",
             "GET /status": "Get API status",
             "GET /countries/image": "Get summary image",
-            "GET /docs": "API documentation"
+            "GET /docs": "API documentation",
+            "GET /test-apis": "Test external APIs"
         }
     }
+
+# Test endpoint for debugging
+@app.get("/test-apis")
+async def test_external_apis():
+    """Test if external APIs are reachable"""
+    import httpx
+    
+    results = {}
+    
+    # Test Countries API
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(os.getenv("COUNTRIES_API_URL"))
+            results["countries_api"] = {
+                "status": "ok",
+                "status_code": response.status_code,
+                "count": len(response.json()) if response.status_code == 200 else 0
+            }
+    except Exception as e:
+        results["countries_api"] = {
+            "status": "error",
+            "error": str(e)
+        }
+    
+    # Test Exchange Rate API
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(os.getenv("EXCHANGE_RATE_API_URL"))
+            data = response.json() if response.status_code == 200 else {}
+            results["exchange_api"] = {
+                "status": "ok",
+                "status_code": response.status_code,
+                "rates_count": len(data.get('rates', {}))
+            }
+    except Exception as e:
+        results["exchange_api"] = {
+            "status": "error",
+            "error": str(e)
+        }
+    
+    return results
 
 # Validation error handler
 @app.exception_handler(RequestValidationError)
@@ -75,6 +118,21 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "error": "Validation failed",
             "details": errors
         }
+    )
+
+# HTTPException handler
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    # If detail is already a dict with 'error' key, return as is
+    if isinstance(exc.detail, dict) and 'error' in exc.detail:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=exc.detail
+        )
+    # Otherwise wrap it
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": str(exc.detail)}
     )
 
 # Generic error handler

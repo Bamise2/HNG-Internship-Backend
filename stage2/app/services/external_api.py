@@ -11,27 +11,36 @@ EXCHANGE_RATE_API_URL = os.getenv("EXCHANGE_RATE_API_URL")
 async def fetch_countries() -> List[Dict]:
     """Fetch all countries from REST Countries API"""
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.get(COUNTRIES_API_URL)
             response.raise_for_status()
-            return response.json()
+            data = response.json()
+            return data
+    except httpx.TimeoutException:
+        raise Exception("Could not fetch data from REST Countries API: Request timed out")
+    except httpx.HTTPStatusError as e:
+        raise Exception(f"Could not fetch data from REST Countries API: HTTP {e.response.status_code}")
     except httpx.HTTPError as e:
         raise Exception(f"Could not fetch data from REST Countries API: {str(e)}")
     except Exception as e:
-        raise Exception(f"Error fetching countries: {str(e)}")
+        raise Exception(f"Could not fetch data from REST Countries API: {str(e)}")
 
 async def fetch_exchange_rates() -> Dict[str, float]:
     """Fetch exchange rates from Exchange Rate API"""
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.get(EXCHANGE_RATE_API_URL)
             response.raise_for_status()
             data = response.json()
             return data.get('rates', {})
+    except httpx.TimeoutException:
+        raise Exception("Could not fetch data from Exchange Rate API: Request timed out")
+    except httpx.HTTPStatusError as e:
+        raise Exception(f"Could not fetch data from Exchange Rate API: HTTP {e.response.status_code}")
     except httpx.HTTPError as e:
         raise Exception(f"Could not fetch data from Exchange Rate API: {str(e)}")
     except Exception as e:
-        raise Exception(f"Error fetching exchange rates: {str(e)}")
+        raise Exception(f"Could not fetch data from Exchange Rate API: {str(e)}")
 
 def extract_currency_code(currencies: List[Dict]) -> Optional[str]:
     """Extract first currency code from currencies array"""
