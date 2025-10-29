@@ -103,6 +103,17 @@ def get_summary_image():
         media_type="image/png",
         headers={"Content-Disposition": "inline; filename=summary.png"}
     )
+    
+@router.get("/status", response_model=StatusResponse)
+def get_status(db: Session = Depends(get_db)):
+    """
+    Show total countries and last refresh timestamp.
+    """
+    metadata = crud.get_or_create_metadata(db)
+    return StatusResponse(
+        total_countries=metadata.total_countries,
+        last_refreshed_at=metadata.last_refreshed_at
+    )
 
 @router.get("/countries/{name}", response_model=CountryResponse)
 def get_country(name: str, db: Session = Depends(get_db)):
@@ -130,13 +141,3 @@ def delete_country(name: str, db: Session = Depends(get_db)):
         )
     return None
 
-@router.get("/status", response_model=StatusResponse)
-def get_status(db: Session = Depends(get_db)):
-    """
-    Show total countries and last refresh timestamp.
-    """
-    metadata = crud.get_or_create_metadata(db)
-    return StatusResponse(
-        total_countries=metadata.total_countries,
-        last_refreshed_at=metadata.last_refreshed_at
-    )
