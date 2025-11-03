@@ -21,19 +21,27 @@ async def refresh_countries(db: Session = Depends(get_db)):
     Fetch all countries and exchange rates, then cache them in the database.
     Also generates a summary image.
     """
+    # Debug logs
+    print("DEBUG: refresh_countries() started")
+    print("DEBUG: COUNTRIES_API_URL =", os.getenv("COUNTRIES_API_URL"))
+    print("DEBUG: EXCHANGE_RATE_API_URL =", os.getenv("EXCHANGE_RATE_API_URL"))
+
     try:
         logger.info("Starting countries refresh...")
 
         # Fetch data from external APIs
         logger.info("Fetching country data...")
+        print("DEBUG: Fetching countries data...")
         countries_data = await fetch_countries()
-        logger.info(f"Fetched {len(countries_data)} countries")
+        print(f"DEBUG: Fetched {len(countries_data)} countries")
 
         logger.info("Fetching exchange rates...")
+        print("DEBUG: Fetching exchange rates...")
         exchange_rates = await fetch_exchange_rates()
-        logger.info(f"Fetched {len(exchange_rates)} exchange rates")
+        print(f"DEBUG: Fetched {len(exchange_rates)} exchange rates")
 
         # Process and store countries
+        print("DEBUG: Processing countries...")
         processed_count = 0
         for country in countries_data:
             try:
@@ -41,17 +49,18 @@ async def refresh_countries(db: Session = Depends(get_db)):
                 crud.create_or_update_country(db, country_info)
                 processed_count += 1
             except Exception as e:
-                logger.error(f"Error processing country {country.get('name', 'Unknown')}: {e}")
+                print(f"DEBUG: Error processing country {country.get('name')}: {e}")
                 continue
 
-        # Update metadata
+        print("DEBUG: Updating metadata...")
         metadata = crud.update_metadata(db, processed_count)
         db.commit()
 
-        # Generate summary image
-        logger.info("Generating summary image...")
+        print("DEBUG: Generating image...")
         top_countries = crud.get_top_countries_by_gdp(db, limit=5)
         generate_summary_image(processed_count, top_countries, metadata.last_refreshed_at)
+
+        print("DEBUG: Refresh completed successfully.")
         logger.info("Summary image generated successfully")
 
         return RefreshResponse(
@@ -61,6 +70,7 @@ async def refresh_countries(db: Session = Depends(get_db)):
         )
 
     except Exception as e:
+        print("DEBUG: Exception occurred in refresh_countries:", str(e))
         logger.exception("Error during refresh_countries")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

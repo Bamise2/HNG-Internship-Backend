@@ -43,6 +43,10 @@ def on_startup():
 # Include routers
 app.include_router(router, tags=["countries"])
 
+# Debug print to confirm routes
+for route in app.routes:
+    print(f"✅ Registered route: {route.path} ({','.join(route.methods)})")
+
 # Root endpoint
 @app.get("/")
 def root():
