@@ -14,6 +14,15 @@ from models.a2a import (
 from agents.bibly_agent import BiblyAgent
 from pydantic import ValidationError
 from uuid import uuid4
+import logging
+import asyncio
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Bibly A2A Agent")
 
@@ -43,7 +52,9 @@ def metadata():
 async def handle_a2a_request(request: Request):
     """Shared handler for A2A requests"""
     try:
+        logger.info("=== Received A2A Request ===")
         body = await request.json()
+        logger.info(f"Request body: {body}")
 
         # Validate JSON-RPC structure
         if body.get("jsonrpc") != "2.0" or "id" not in body:
@@ -108,14 +119,20 @@ async def handle_a2a_request(request: Request):
             for part in last_message.parts:
                 if part.kind == "text" and part.text:
                     text += part.text.strip() + " "
+                # Skip data parts with conversation history
+                # Telex sends previous messages in data field
             text = text.strip()
 
         if not text:
             text = "faith"  # Default topic
+        
+        logger.info(f"Extracted text: '{text}'")
 
         # Generate IDs if not provided
         context_id = context_id or str(uuid4())
         task_id = task_id or str(uuid4())
+        
+        logger.info(f"Context ID: {context_id}, Task ID: {task_id}")
 
         # Check for "next X days" pattern
         next_match = re.search(r"next\s+(\d+)\s*[-]?\s*day(?:s)?", text, re.I)
@@ -177,10 +194,20 @@ async def handle_a2a_request(request: Request):
                 else:
                     topic = text or "faith"
                     num = 5
+            
+            logger.info(f"Creating plan: topic='{topic}', days={num}")
 
-            # Create the plan
-            task_result, ctx = await agent.create_plan(topic, num, context_id)
-            user_contexts[context_id] = ctx
+            # Create the plan with timeout protection
+            try:
+                task_result, ctx = await asyncio.wait_for(
+                    agent.create_plan(topic, num, context_id),
+                    timeout=20.0  # 20 second timeout
+                )
+                user_contexts[context_id] = ctx
+                logger.info(f"Plan created successfully for context {context_id}")
+            except asyncio.TimeoutError:
+                logger.error("Timeout creating plan, returning error")
+                raise Exception("Plan creation timed out. Please try again.")
 
         # Update IDs to match request
         task_result.id = task_id
@@ -189,17 +216,26 @@ async def handle_a2a_request(request: Request):
         # Update history with original messages
         task_result.history = messages + [task_result.status.message]
 
+        # Convert to dict for response
+        result_dict = task_result.model_dump()
+        
+        # Log for debugging
+        logger.info(f"✅ Returning TaskResult with contextId: {result_dict.get('contextId')}")
+        logger.info(f"Response keys: {list(result_dict.keys())}")
+        logger.info(f"Message preview: {result_dict.get('status', {}).get('message', {}).get('parts', [{}])[0].get('text', '')[:100]}...")
+
         # Return proper JSON-RPC response
         return JSONResponse(
             status_code=200,
             content={
                 "jsonrpc": "2.0",
                 "id": rpc.id,
-                "result": task_result.model_dump()
+                "result": result_dict
             }
         )
 
     except Exception as e:
+        logger.error(f"❌ Error in handle_a2a_request: {e}", exc_info=True)
         return JSONResponse(
             status_code=500,
             content={
@@ -223,6 +259,12 @@ async def a2a_scripture(request: Request):
 @app.post("/a2a/execute")
 async def a2a_execute(request: Request):
     """Alternative endpoint for backward compatibility"""
+    return await handle_a2a_request(request)
+
+
+@app.post("/webhook")
+async def webhook_handler(request: Request):
+    """Webhook endpoint for Telex (if needed)"""
     return await handle_a2a_request(request)
 
 
