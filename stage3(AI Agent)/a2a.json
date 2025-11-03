@@ -4,8 +4,8 @@
   "category": "utilities",
   "name": "ScriptureStream",
   "short_description": "Creates themed, multi-day Bible reading plans from any topic.",
-  "description": "An AI agent that creates themed, multi-day Bible reading plans based on any topic, and can continue from where you stopped (e.g. 'next 10 days').",
-  "long_description": "ScriptureStream is a smart Bible reading assistant that generates themed, multi-day reading plans from any topic a user requests. Simply say something like 'Create a 5-day plan about faith' and it returns a structured daily reading guide. You can also say 'next 10 days' to continue where you left off. It fetches verses from the Bible SuperSearch API, formats them neatly, and delivers them as daily insights for spiritual growth.",
+  "description": "An AI agent that creates themed, multi-day Bible reading plans based on any topic, and can continue from where you stopped.",
+  "long_description": "ScriptureStream generates personalized Bible reading plans. Say 'create a 7-day plan about faith' or 'next 10 days' to continue.",
   "type": "a2a",
   "repository": "https://github.com/Bamise2/HNG-Internship-Backend",
   "nodes": [
@@ -14,7 +14,7 @@
       "name": "Scripture Agent",
       "type": "a2a/mastra-a2a-node",
       "typeVersion": 1,
-      "url": "https://hng-internship-backend-production-da98.up.railway.app/a2a/execute",
+      "url": "https://hng-internship-backend-production-da98.up.railway.app/a2a/scripture",
       "parameters": {},
       "position": [420, -210]
     }
@@ -30,14 +30,5 @@
       "role": "Developer"
     }
   ],
-  "logo_url": "https://cdn-icons-png.flaticon.com/512/3062/3062634.png",
-  "example_input": {
-    "input_text": "Create a 7-day Bible reading plan about forgiveness"
-  },
-  "example_output": {
-    "event_name": "message",
-    "data": {
-      "text": "🕊️ Your 7-Day Forgiveness Reading Plan\n\n📖 Day 1: Matthew 6:14 — For if ye forgive men their trespasses, your heavenly Father will also forgive you..."
-    }
-  }
+  "logo_url": "https://cdn-icons-png.flaticon.com/512/3062/3062634.png"
 }
