@@ -1,11 +1,28 @@
 {
+  "active": true,
   "schema_version": "v1",
+  "category": "utilities",
   "name": "ScriptureStream",
+  "short_description": "Creates themed, multi-day Bible reading plans from any topic.",
   "description": "An AI agent that creates themed, multi-day Bible reading plans based on any topic, and can continue from where you stopped (e.g. 'next 10 days').",
+  "long_description": "ScriptureStream is a smart Bible reading assistant that generates themed, multi-day reading plans from any topic a user requests. Simply say something like 'Create a 5-day plan about faith' and it returns a structured daily reading guide. You can also say 'next 10 days' to continue where you left off. It fetches verses from the Bible SuperSearch API, formats them neatly, and delivers them as daily insights for spiritual growth.",
   "type": "a2a",
   "repository": "https://github.com/Bamise2/HNG-Internship-Backend",
-  "categories": ["spirituality", "education", "productivity"],
-  "logo_url": "https://cdn-icons-png.flaticon.com/512/3062/3062634.png",
+  "nodes": [
+    {
+      "id": "scripture_agent",
+      "name": "Scripture Agent",
+      "type": "a2a/mastra-a2a-node",
+      "typeVersion": 1,
+      "url": "https://hng-internship-backend-production-da98.up.railway.app/a2a/execute",
+      "parameters": {},
+      "position": [420, -210]
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
   "authors": [
     {
       "name": "Bami",
@@ -13,10 +30,7 @@
       "role": "Developer"
     }
   ],
-  "endpoints": {
-    "metadata": "https://hng-internship-backend-production-da98.up.railway.app/a2a/metadata",
-    "execute": "https://hng-internship-backend-production-da98.up.railway.app/a2a/execute"
-  },
+  "logo_url": "https://cdn-icons-png.flaticon.com/512/3062/3062634.png",
   "example_input": {
     "input_text": "Create a 7-day Bible reading plan about forgiveness"
   },

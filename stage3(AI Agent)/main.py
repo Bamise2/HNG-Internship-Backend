@@ -3,10 +3,12 @@ from fastapi.responses import JSONResponse
 import httpx
 import re
 import asyncio
+import os
+import uvicorn
 
 app = FastAPI()
 
-MAX_DAYS = 10  # cap the number of days to prevent huge messages
+MAX_DAYS = 10  # Cap the number of days to prevent huge messages
 
 # --- Helper function to fetch verses ---
 async def fetch_verses(client: httpx.AsyncClient, topic: str) -> list:
@@ -28,15 +30,27 @@ async def fetch_verses(client: httpx.AsyncClient, topic: str) -> list:
         print(f"Error fetching verses: {e}")
         return []
 
+
 # --- A2A Metadata Endpoint ---
 @app.get("/a2a/metadata")
 def metadata():
     return {
         "schema_version": "v1",
-        "name": "ScriptureStream",
+        "name": "Bibly",
         "description": "An AI agent that creates themed, multi-day Bible reading plans based on any topic.",
-        "type": "a2a"
+        "short_description": "Generates Bible reading plans by topic and duration.",
+        "type": "a2a",
+        "version": "1.0.0",
+        "inputs": {
+            "input_text": {
+                "type": "string",
+                "description": "User's request, e.g., 'Create a 7-day plan on faith'"
+            }
+        },
+        "author": "Shogbesan Oluwabamiseyori",
+        "email": "shogbesanoluwabamiseyori@gmail.com"
     }
+
 
 # --- A2A Execute Endpoint ---
 @app.post("/a2a/execute")
@@ -50,13 +64,19 @@ async def execute(request: Request):
             "data": {"text": "Please provide a topic to create a reading plan."}
         })
 
-    # 1. Extract Topic
+    # --- Extract Topic ---
     match = re.search(r"about\s+([\w\s']+)", input_text.lower())
     topic = match.group(1).strip() if match else input_text
 
-    # 2. Extract Number of Days (default 5, capped at MAX_DAYS)
-    days_match = re.search(r"(\d+)[-\s]day", input_text.lower())
+    # --- Extract Number of Days (default 5, capped at MAX_DAYS) ---
+    days_match = re.search(r"(\d+)[-\s]?day", input_text.lower())
     num_days = min(int(days_match.group(1)) if days_match else 5, MAX_DAYS)
+
+    # --- Send "working..." message ---
+    intro_message = {
+        "event_name": "message",
+        "data": {"text": f"Creating your {num_days}-day reading plan on {topic}!"}
+    }
 
     async with httpx.AsyncClient() as client:
         verses = await fetch_verses(client, topic)
@@ -64,10 +84,10 @@ async def execute(request: Request):
     if not verses:
         return JSONResponse({
             "event_name": "message",
-            "data": {"text": f"Sorry, I couldn't find any verses with the exact word '{topic}'."}
+            "data": {"text": f"Sorry, I couldn't find any verses with the word '{topic}'."}
         })
 
-    # 3. Build message lines
+    # --- Build the reading plan ---
     message_lines = []
     for i in range(num_days):
         if i < len(verses):
@@ -89,20 +109,19 @@ async def execute(request: Request):
         else:
             message_lines.append(f"📖 Day {i+1}: No verse found for this day.")
 
-    # 4. Compose final message
+    # --- Compose final message ---
     message = f"🕊️ Your {num_days}-Day {topic.title()} Reading Plan\n\n" + "\n\n".join(message_lines)
 
+    # --- Return both intro and result events ---
     return JSONResponse({
-        "event_name": "message",
-        "data": {"text": message}
+        "events": [
+            intro_message,
+            {"event_name": "message", "data": {"text": message}}
+        ]
     })
 
 
-
-
-
-
+# --- Run app locally or on Railway ---
 if __name__ == "__main__":
-    import uvicorn, os
     port = int(os.getenv("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port)
