@@ -1,0 +1,29 @@
+{
+  "schema_version": "v1",
+  "name": "ScriptureStream",
+  "description": "An AI agent that creates themed, multi-day Bible reading plans based on any topic, and can continue from where you stopped (e.g. 'next 10 days').",
+  "type": "a2a",
+  "repository": "https://github.com/Bamise2/HNG-Internship-Backend",
+  "categories": ["spirituality", "education", "productivity"],
+  "logo_url": "https://cdn-icons-png.flaticon.com/512/3062/3062634.png",
+  "authors": [
+    {
+      "name": "Bami",
+      "email": "shogbesanoluwabamiseyori@gmail.com",
+      "role": "Developer"
+    }
+  ],
+  "endpoints": {
+    "metadata": "https://hng-internship-backend-production-da98.up.railway.app/a2a/metadata",
+    "execute": "https://hng-internship-backend-production-da98.up.railway.app/a2a/execute"
+  },
+  "example_input": {
+    "input_text": "Create a 7-day Bible reading plan about forgiveness"
+  },
+  "example_output": {
+    "event_name": "message",
+    "data": {
+      "text": "🕊️ Your 7-Day Forgiveness Reading Plan\n\n📖 Day 1: Matthew 6:14 — For if ye forgive men their trespasses, your heavenly Father will also forgive you..."
+    }
+  }
+}
